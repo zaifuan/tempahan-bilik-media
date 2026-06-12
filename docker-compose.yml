@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tempahan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tempahan_db
+      POSTGRES_USER: tempahan_user
+      POSTGRES_PASSWORD: k7STmWEFZxVvGX5l1gSgVTnr
+      TZ: Asia/Kuala_Lumpur
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  tempahan-bilik-media:
+    build: .
+    container_name: tempahan-bilik-media
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

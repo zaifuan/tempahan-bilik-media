@@ -1,0 +1,35 @@
+{
+  "name": "sistem-tempahan-bilik-media",
+  "version": "1.0.0",
+  "description": "Sistem Tempahan Bilik Media — SABK Maahad Al Khair Lil Banat (Node.js + PostgreSQL)",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js",
+    "init-db": "node scripts/init-db.js",
+    "import-excel": "node scripts/import-excel.js",
+    "create-admin": "node scripts/create-admin.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "xlsx": "^0.18.5",
+    "express-session": "^1.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "byzaifuan",
+  "license": "Proprietary"
+}

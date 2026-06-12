@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#16a34a"/>
+<title>Admin · Sistem Tempahan Bilik Media</title>
+<link rel="stylesheet" href="/css/admin.css"/>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ LOGIN VIEW ══ -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <div class="login-hdr">
+      <div class="login-logo">🔐</div>
+      <h1>Admin Panel</h1>
+      <p>Sistem Tempahan Bilik Media</p>
+    </div>
+    <form id="loginForm" onsubmit="event.preventDefault();doLogin()">
+      <div class="fg">
+        <label>Username</label>
+        <input class="fc" type="text" id="loginUser" autocomplete="username" required/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input class="fc" type="password" id="loginPass" autocomplete="current-password" required/>
+      </div>
+      <div id="loginErr" class="warn-box" style="display:none"></div>
+      <button class="btn btn-hijau" id="btnLogin" type="submit">Log Masuk</button>
+    </form>
+    <div class="login-foot">
+      <a href="/">← Kembali ke aplikasi utama</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP VIEW (after login) ══ -->
+<div id="appView" style="display:none">
+
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div class="admin-brand">
+        <span class="brand-icon">⚙️</span>
+        <div>
+          <h1>Admin Panel</h1>
+          <p>Sistem Tempahan Bilik Media</p>
+        </div>
+      </div>
+      <div class="admin-user">
+        <span id="adminName">—</span>
+        <button class="btn-logout" onclick="doLogout()">Keluar</button>
+      </div>
+    </div>
+    <nav class="admin-tabs" id="adminTabs">
+      <button class="tab-btn aktif" data-tab="dashboard" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+      <button class="tab-btn" data-tab="bookings" onclick="showTab('bookings',this)">📅 Tempahan</button>
+      <button class="tab-btn" data-tab="teachers" onclick="showTab('teachers',this)">👥 Guru</button>
+      <button class="tab-btn" data-tab="classes" onclick="showTab('classes',this)">🎓 Kelas</button>
+      <button class="tab-btn" data-tab="subjects" onclick="showTab('subjects',this)">📚 Subjek</button>
+      <button class="tab-btn" data-tab="schedule" onclick="showTab('schedule',this)">🗓️ Jadual</button>
+      <button class="tab-btn" data-tab="settings" onclick="showTab('settings',this)">⚙️ Tetapan</button>
+      <button class="tab-btn" data-tab="disabled" onclick="showTab('disabled',this)">⏸️ Disabled Slots</button>
+      <button class="tab-btn" data-tab="holidays" onclick="showTab('holidays',this)">🎉 Cuti</button>
+      <button class="tab-btn" data-tab="admins" onclick="showTab('admins',this)">🔑 Admin Users</button>
+    </nav>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- ── DASHBOARD ── -->
+    <section class="admin-section active" id="tab-dashboard">
+      <h2>Dashboard</h2>
+      <div class="dash-grid" id="dashStats">
+        <div class="loading"><div class="spinner"></div> Memuatkan...</div>
+      </div>
+      <div class="dash-card">
+        <h3>Log Aktiviti Terkini</h3>
+        <div id="dashLogs"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+      </div>
+    </section>
+
+    <!-- ── BOOKINGS ── -->
+    <section class="admin-section" id="tab-bookings">
+      <div class="sec-header">
+        <h2>Tempahan</h2>
+        <div class="filter-row">
+          <input class="fc" type="date" id="bkDateFrom" onchange="loadBookings()"/>
+          <input class="fc" type="date" id="bkDateTo" onchange="loadBookings()"/>
+          <select class="fc" id="bkStatus" onchange="loadBookings()">
+            <option value="">Semua Status</option>
+            <option value="TEMPAH">TEMPAH</option>
+            <option value="BATAL">BATAL</option>
+          </select>
+        </div>
+      </div>
+      <div id="bookingsTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── TEACHERS ── -->
+    <section class="admin-section" id="tab-teachers">
+      <div class="sec-header">
+        <h2>Senarai Guru</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openTeacherModal()">+ Tambah Guru</button>
+      </div>
+      <div id="teachersTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── CLASSES ── -->
+    <section class="admin-section" id="tab-classes">
+      <div class="sec-header">
+        <h2>Senarai Kelas</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openClassModal()">+ Tambah Kelas</button>
+      </div>
+      <div id="classesTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── SUBJECTS ── -->
+    <section class="admin-section" id="tab-subjects">
+      <div class="sec-header">
+        <h2>Senarai Subjek</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openSubjectModal()">+ Tambah Subjek</button>
+      </div>
+      <div id="subjectsTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── SCHEDULE ── -->
+    <section class="admin-section" id="tab-schedule">
+      <div class="sec-header">
+        <h2>Jadual Mengajar</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openScheduleModal()">+ Tambah Jadual</button>
+      </div>
+      <div class="filter-row">
+        <select class="fc" id="schFilterGuru" onchange="loadSchedule()">
+          <option value="">Semua Guru</option>
+        </select>
+        <select class="fc" id="schFilterHari" onchange="loadSchedule()">
+          <option value="">Semua Hari</option>
+          <option value="ISNIN">ISNIN</option>
+          <option value="SELASA">SELASA</option>
+          <option value="RABU">RABU</option>
+          <option value="KHAMIS">KHAMIS</option>
+          <option value="JUMAAT">JUMAAT</option>
+        </select>
+      </div>
+      <div id="scheduleTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section class="admin-section" id="tab-settings">
+      <h2>Tetapan Sistem</h2>
+      <div id="settingsForm"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── DISABLED SLOTS ── -->
+    <section class="admin-section" id="tab-disabled">
+      <div class="sec-header">
+        <h2>Disabled Slots (Rehat / Solat)</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openDisabledModal()">+ Tambah</button>
+      </div>
+      <div id="disabledTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── HOLIDAYS ── -->
+    <section class="admin-section" id="tab-holidays">
+      <div class="sec-header">
+        <h2>Cuti & Hari Kelepasan</h2>
+        <button class="btn btn-hijau btn-auto" onclick="openHolidayModal()">+ Tambah Cuti</button>
+      </div>
+      <div id="holidaysTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+    <!-- ── ADMIN USERS ── -->
+    <section class="admin-section" id="tab-admins">
+      <div class="sec-header">
+        <h2>Admin Users</h2>
+        <button class="btn btn-hijau btn-auto" id="btnNewAdmin" onclick="openAdminModal()">+ Tambah Admin</button>
+      </div>
+      <div id="adminsTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══ GENERIC MODAL ══ -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="adminModalTitle">Modal</h3>
+      <button class="modal-close" onclick="closeAdminModal()">✕</button>
+    </div>
+    <div class="modal-body" id="adminModalBody"></div>
+  </div>
+</div>
+
+<script src="/js/admin.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#16a34a"/>
+<title>Sistem Tempahan Bilik Media</title>
+<link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-wrap">
+      <div class="logo-ring">
+        <img class="logo-img" id="schoolLogo"
+          src="https://raw.githubusercontent.com/zaifuan/assests/main/logos/aft6003.png"
+          alt="Logo Sekolah"
+          onerror="this.style.display='none';this.parentElement.innerHTML='&#127916;'"
+        />
+      </div>
+    </div>
+    <div class="header-title">
+      <h1 id="schoolTitle">Sistem Tempahan Bilik Media</h1>
+      <p id="schoolSubtitle">SABK Maahad Al Khair Lil Banat</p>
+    </div>
+    <div class="header-clock">
+      <span class="jam" id="hJam">--:--</span>
+      <span class="tgl" id="hTgl">---</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ CONTAINER ══ -->
+<div class="container">
+
+  <!-- ▸ SECTION: UTAMA ◂ -->
+  <div class="section active" id="sec-utama">
+
+    <!-- Status bilik sekarang -->
+    <div class="status-bilik s-luar" id="statusBilik">
+      <div class="status-icon" id="statusIcon">&#128274;</div>
+      <div class="status-info">
+        <h3 id="statusTitle">Memuatkan...</h3>
+        <p id="statusDesc">Sedang semak status bilik</p>
+        <span class="status-badge bdg-luar" id="statusBadge">...</span>
+      </div>
+    </div>
+
+    <!-- Jadual -->
+    <div class="card">
+      <div class="card-hdr">
+        <span class="icon">&#128197;</span>
+        <h2 id="jadualTitle">Jadual Hari Ini</h2>
+      </div>
+      <div class="card-body">
+
+        <!-- Date Navigation -->
+        <div class="date-nav">
+          <button class="date-nav-btn" onclick="changeDate(-1)" aria-label="Hari sebelum">&#8592;</button>
+          <div class="date-display-wrap">
+            <div class="date-display">
+              <span>&#128197;</span>
+              <span id="dateDisplay">Memuatkan...</span>
+            </div>
+            <input type="date" id="datePicker" class="date-picker-hidden"
+              onchange="onDatePickerChange()" aria-label="Pilih tarikh"/>
+          </div>
+          <button class="date-nav-btn" onclick="changeDate(1)" aria-label="Hari berikut">&#8594;</button>
+          <button class="btn-today" id="btnToday" onclick="setToday()">Hari Ini</button>
+          <button class="btn-papar" onclick="paparJadualHarian()" title="Paparan jadual">&#128438; Papar</button>
+        </div>
+
+        <!-- Slot Grid -->
+        <div class="slot-grid" id="slotGrid">
+          <div class="loading"><div class="spinner"></div> Memuatkan jadual...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sec-utama -->
+
+  <!-- ▸ SECTION: REKOD ◂ -->
+  <div class="section" id="sec-rekod">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="icon">&#128202;</span>
+        <div>
+          <h2 style="margin:0">Rekod Bilik Media</h2>
+          <p style="font-size:.7rem;color:rgba(255,255,255,.85);margin:1px 0 0">Papan pemantauan bulanan</p>
+        </div>
+      </div>
+      <div id="statBlockRekod">
+        <div class="loading"><div class="spinner"></div> Memuatkan...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ SECTION: SAYA ◂ -->
+  <div class="section" id="sec-saya">
+    <div class="card">
+      <div class="card-hdr"><span class="icon">&#128193;</span><h2>Tempahan Saya</h2></div>
+      <div class="card-body">
+        <div class="fg" style="margin-bottom:11px">
+          <label>Nama Guru</label>
+          <select class="fc" id="myGuruSel" onchange="loadTempahanSaya()">
+            <option value="">— Pilih Nama Guru —</option>
+          </select>
+        </div>
+        <div id="myList">
+          <div class="empty"><div class="ei">&#128203;</div><p>Pilih nama guru untuk lihat tempahan</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- FAB -->
+<button class="fab" onclick="bukaModal()" title="Buat Tempahan">+</button>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn aktif" onclick="showSection('utama',this)">
+    <span class="ni">&#127968;</span><span class="nl">Utama</span>
+  </button>
+  <button class="nav-btn" onclick="showSection('rekod',this)">
+    <span class="ni">&#128202;</span><span class="nl">Rekod</span>
+  </button>
+  <button class="nav-btn" onclick="showSection('saya',this)">
+    <span class="ni">&#128100;</span><span class="nl">Saya</span>
+  </button>
+</nav>
+
+<!-- ══ MODAL TEMPAHAN ══ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="modalTitle">Buat Tempahan</h3>
+      <button class="modal-close" onclick="tutupModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Pilih Jenis -->
+      <div id="step-jenis">
+        <p style="font-size:.81rem;color:var(--kelabu);margin-bottom:12px">Pilih jenis tempahan:</p>
+        <div class="jenis-grid">
+          <div class="jenis-card" id="jenisPDP" onclick="pilihJenis('PDP')">
+            <div class="ji">&#128218;</div><h4>PdPc</h4>
+            <p>Berdasarkan jadual mengajar</p>
+          </div>
+          <div class="jenis-card" id="jenisUMUM" onclick="pilihJenis('UMUM')">
+            <div class="ji">&#127908;</div><h4>Umum</h4>
+            <p>Mesyuarat / Seminar / Program</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2a: PdPc -->
+      <div id="step-pdp" style="display:none">
+        <div class="fg">
+          <label>Tarikh <span>*</span></label>
+          <div class="modal-date-box">
+            <span class="mdi">&#128197;</span>
+            <span class="modal-date-label" id="mDateLabel">—</span>
+            <input type="date" class="modal-date-picker" id="mDatePdp" onchange="onPdpDateChange()" />
+          </div>
+        </div>
+        <div class="fg">
+          <label>Nama Guru <span>*</span></label>
+          <select class="fc" id="fGuru" onchange="onGuruChange()">
+            <option value="">— Pilih Nama Guru —</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <p style="font-size:.77rem;font-weight:700;color:#374151;margin-bottom:3px">
+            Pilih Slot Kelas <span style="color:var(--merah)">*</span>
+          </p>
+          <p class="pdp-hint">👆 Pilih satu atau lebih slot — klik slot yang sama untuk unselect</p>
+          <div class="kelas-grid" id="pdpKelasGrid">
+            <div class="empty"><div class="ei">&#128070;</div><p>Pilih guru untuk lihat jadual</p></div>
+          </div>
+        </div>
+        <div class="info-box" id="pdpInfo" style="display:none"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="balik()">&#8592; Balik</button>
+          <button class="btn btn-hijau" id="btnTempah" onclick="submitPdP()" disabled>&#10003; Tempah</button>
+        </div>
+      </div>
+
+      <!-- Step 2b: Umum -->
+      <div id="step-umum" style="display:none">
+        <div class="fg">
+          <label>Tarikh <span>*</span></label>
+          <input class="fc" type="date" id="mDateUmum" onchange="validateUmum()"/>
+        </div>
+        <div class="fg">
+          <label>Nama Guru <span>*</span></label>
+          <select class="fc" id="fGuruUmum" onchange="validateUmum()">
+            <option value="">— Pilih Nama Guru —</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Masa Penggunaan <span>*</span></label>
+          <div class="fc-row">
+            <div>
+              <p style="font-size:.71rem;color:var(--kelabu);margin-bottom:4px">Mula</p>
+              <input class="fc" type="time" id="fMasaMula" oninput="validateUmum()"/>
+            </div>
+            <div>
+              <p style="font-size:.71rem;color:var(--kelabu);margin-bottom:4px">Tamat</p>
+              <input class="fc" type="time" id="fMasaTamat" oninput="validateUmum()"/>
+            </div>
+          </div>
+          <div class="warn-box" id="umumWarn" style="display:none;margin-top:6px"></div>
+        </div>
+        <div class="fg">
+          <label>Tujuan Penggunaan <span>*</span></label>
+          <input class="fc" type="text" id="fTujuan"
+            placeholder="cth: Mesyuarat Panitia, Taklimat SPM..."
+            oninput="validateUmum()"/>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="balik()">&#8592; Balik</button>
+          <button class="btn btn-hijau" id="btnTempahUmum" onclick="submitUmum()" disabled>&#10003; Tempah</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ OVERLAY PAPAR/CETAK ══ -->
+<div class="cetak-overlay" id="cetakOverlay" onclick="if(event.target===this)tutupCetak()">
+  <div class="cetak-modal">
+    <div class="cetak-actions">
+      <span class="cetak-actions-title">&#128438; Paparan Jadual</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cetak-print" onclick="cetakSekarang()">&#128424; Cetak</button>
+        <button class="btn-cetak-tutup" onclick="tutupCetak()">&#10005; Tutup</button>
+      </div>
+    </div>
+    <div id="cetakBody" class="cetak-body"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
