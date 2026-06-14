@@ -155,7 +155,7 @@ async function syncJadualGuru() {
         [
           rec.hari,
           kelas ? kelas.id : null,
-          rec.kelas || 'FREE',
+          rec.kelas || null,
           rec.masa,
           rec.startMin,
           rec.endMin,

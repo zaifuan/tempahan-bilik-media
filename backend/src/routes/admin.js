@@ -5,6 +5,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
+const { syncGoogleSheet } = require('../services/googleSheetSync');
 
 const { query, transaction } = require('../db');
 const { signToken, requireAdmin, requireSuperAdmin } = require('../middleware/auth');
@@ -754,3 +755,24 @@ router.post('/cache/clear', (req, res) => {
 });
 
 module.exports = router;
+
+// Manual sync Google Sheet
+router.post('/sync/google-sheet', async (req, res) => {
+  try {
+    const result = await syncGoogleSheet();
+
+    res.json({
+      success: true,
+      message: 'Sync Google Sheet berjaya',
+      data: result
+    });
+  } catch (err) {
+    console.error('Sync Google Sheet gagal:', err);
+
+    res.status(500).json({
+      success: false,
+      message: 'Sync Google Sheet gagal',
+      error: err.message
+    });
+  }
+});

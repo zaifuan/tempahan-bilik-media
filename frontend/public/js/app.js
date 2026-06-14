@@ -821,11 +821,16 @@ function renderKelasGrid(jadual, tempahan, hari, grid) {
     grid.appendChild(allBtn);
   }
 
-  jadual.forEach(kelas => {
-    const conflict = tempahan.find(t=>{
-      const tS=t.startMin,tE=t.endMin;
-      if (!tS||!tE){const p=parseMasaJS(normTime(t.masa));return p?isOverlapJS(kelas.startMin,kelas.endMin,p.s,p.e):false;}
-      return isOverlapJS(kelas.startMin,kelas.endMin,tS,tE);
+  jadual
+  .filter(kelas => kelas.kelas && kelas.subjek)
+  .forEach(kelas => {
+    const conflict = tempahan.find(t => {
+      const tS = t.startMin, tE = t.endMin;
+      if (!tS || !tE) {
+        const p = parseMasaJS(normTime(t.masa));
+        return p ? isOverlapJS(kelas.startMin, kelas.endMin, p.startMin, p.endMin) : false;
+      }
+      return isOverlapJS(kelas.startMin, kelas.endMin, tS, tE);
     });
 
     const card = document.createElement('div');

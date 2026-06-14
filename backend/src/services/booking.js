@@ -78,6 +78,7 @@ async function getJadualGuruTarikh(namaGuru, tarikhYMD) {
         SELECT masa, kelas_name AS kelas, subject_kod AS subjek, start_min AS "startMin", end_min AS "endMin"
         FROM teacher_schedule
         WHERE hari = $1 AND teacher_name = $2
+        AND kelas_name IS NOT NULL
         ORDER BY start_min
       `, [hari, match.teacher_name]);
       return { hari, tarikh: tarikhYMD, data: r.rows };
@@ -90,6 +91,7 @@ async function getJadualGuruTarikh(namaGuru, tarikhYMD) {
            start_min AS "startMin", end_min AS "endMin"
     FROM teacher_schedule
     WHERE hari = $1 AND teacher_id = $2
+    AND kelas_name IS NOT NULL
     ORDER BY start_min
   `, [hari, teacherId]);
 
