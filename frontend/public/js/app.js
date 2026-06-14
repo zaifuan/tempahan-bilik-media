@@ -366,15 +366,18 @@ function renderJadual(res) {
   const events  = res.slots || [];
   const bookings = events.filter(e => e.type === 'booking');
 
-  // Header ringkasan
+  // Header ringkasan — badge statistik
   const summary = document.createElement('div');
-  summary.className = 'jadual-summary';
   if (bookings.length === 0) {
-    summary.innerHTML = `<span class="sum-free">✅ Bilik tersedia sepanjang hari</span>
-      ${isToday ? '<span class="sum-hint">Klik + untuk buat tempahan</span>' : ''}`;
+    summary.className = 'jadual-summary is-free';
+    summary.innerHTML = `<span class="sum-ic">✅</span>
+      <span class="sum-free">Bilik tersedia${isToday ? ' sepanjang hari' : ''}</span>
+      ${isToday ? '<span class="sum-hint">Tekan + untuk tempah</span>' : ''}`;
   } else {
-    summary.innerHTML = `<span class="sum-count">${bookings.length}</span>
-      <span class="sum-label">tempahan hari ini</span>`;
+    summary.className = 'jadual-summary';
+    summary.innerHTML = `<span class="sum-ic">📅</span>
+      <span class="sum-count">${bookings.length}</span>
+      <span class="sum-label">Tempahan${isToday ? ' Hari Ini' : ''}</span>`;
   }
   grid.appendChild(summary);
 
@@ -399,9 +402,14 @@ function renderJadual(res) {
 
       div.className = cls;
 
-      const label = `${escapeHtml(t.singkatan||t.guru||'—')}${t.kelas ? ' — '+escapeHtml(t.kelas) : ''}`;
-      const sub   = ev.status==='PDP' ? (t.subjek||'') : (t.tujuan||'');
+      const nama   = escapeHtml(t.singkatan || t.guru || '—');
+      const detail = ev.status === 'PDP' ? (t.subjek || '') : (t.tujuan || '');
+      const metaParts = [];
+      if (t.kelas) metaParts.push(escapeHtml(t.kelas));
+      if (detail)  metaParts.push(escapeHtml(detail));
+      const meta  = metaParts.join(' • ');
       const badge = `<span class="slot-badge bdg-${ev.status.toLowerCase()}">${ev.status}</span>`;
+      const live  = isSemasa ? '<span class="slot-live">● Sedang digunakan</span>' : '';
 
       const batalBtn = t.guru && t.tarikh
         ? `<button class="slot-batal-btn"
@@ -410,13 +418,14 @@ function renderJadual(res) {
         : '';
 
       div.innerHTML = `
-        <div class="slot-dot"></div>
-        <div class="slot-masa">${formatMasaRange(ev.slot)}</div>
-        <div class="slot-info">
-          <div class="slot-label">${label}</div>
-          ${sub ? `<div class="slot-sub">${escapeHtml(sub)}</div>` : ''}
+        <div class="slot-top">
+          <span class="slot-masa"><span class="slot-clock">🕒</span>${formatMasaRange(ev.slot)}</span>
+          ${badge}
+          ${batalBtn}
         </div>
-        ${badge}${batalBtn}`;
+        <div class="slot-name">${nama}</div>
+        ${meta ? `<div class="slot-meta">${meta}</div>` : ''}
+        ${live}`;
     }
 
     grid.appendChild(div);
@@ -550,91 +559,6 @@ async function loadTempahanSaya() {
         <button class="batal-btn" onclick="batalTempahan('${t.tarikh}','${t.masa}','${guru.replace(/'/g,"\\'")}')">Batal</button>
       </div>`;
   }).join('');
-}
-
-// ─── PAPAR / CETAK JADUAL ────────────────────────────────────
-function paparJadualHarian() {
-  const data     = APP.jadualData;
-  const tarikh   = APP.tarikhDipilih;
-  const events   = (data && data.slots) || [];
-  const bookings = events.filter(e => e.type === 'booking');
-  const hari     = (data && data.hari) || getHariDariTarikhJS(tarikh);
-
-  const tObj = (function() {
-    try { const [y,m,d] = tarikh.split('-'); return new Date(+y,+m-1,+d); } catch(_) { return null; }
-  })();
-  const tarikhLabel = tObj
-    ? tObj.toLocaleDateString('ms-MY', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
-    : tarikh;
-
-  let rows = '';
-  if (!bookings.length) {
-    rows = `<tr><td colspan="6" class="td-kosong">— Tiada tempahan pada hari ini —</td></tr>`;
-  } else {
-    bookings.forEach((ev, i) => {
-      const t    = ev.items[0] || {};
-      const sub  = ev.status === 'PDP' ? (t.subjek||'—') : (t.tujuan||'—');
-      const jBg  = ev.status === 'PDP' ? '#dcfce7' : '#fef3c7';
-      const jClr = ev.status === 'PDP' ? '#166534'  : '#92400e';
-      rows += `<tr>
-        <td class="td-bil">${i + 1}</td>
-        <td class="td-masa">${formatMasaRange(ev.slot)}</td>
-        <td class="td-guru">${escapeHtml(t.guru || '—')}</td>
-        <td class="td-kelas">${escapeHtml(t.kelas || '—')}</td>
-        <td class="td-sub">${escapeHtml(sub)}</td>
-        <td class="td-jenis">
-          <span style="background:${jBg};color:${jClr};padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${ev.status}</span>
-        </td>
-      </tr>`;
-    });
-  }
-
-  const sekolah = APP.settings?.SCHOOL_NAME || 'SABK Maahad Al Khair Lil Banat';
-  const bilik   = APP.settings?.ROOM_NAME   || 'BILIK MEDIA';
-  const tarSk   = new Date().toLocaleDateString('ms-MY');
-
-  document.getElementById('cetakBody').innerHTML = `
-    <div class="cetak-wrap">
-      <div class="cetak-kop">
-        <img class="cetak-logo-img"
-          src="https://raw.githubusercontent.com/zaifuan/assests/main/logos/aft6003.png"
-          onerror="this.style.display='none'" alt="Logo"/>
-        <div class="cetak-kop-text">
-          <div class="cetak-nama-sekolah">${escapeHtml(sekolah)}</div>
-          <div class="cetak-tajuk">JADUAL TEMPAHAN ${escapeHtml(bilik.toUpperCase())}</div>
-        </div>
-      </div>
-      <div class="cetak-date-bar">
-        <span>📅 ${tarikhLabel.toUpperCase()}</span>
-        <span>${bookings.length} TEMPAHAN</span>
-      </div>
-      <table class="jadual-cetak">
-        <thead>
-          <tr>
-            <th class="th-bil">BIL</th>
-            <th class="th-masa">MASA</th>
-            <th class="th-guru">NAMA GURU</th>
-            <th class="th-kelas">KELAS</th>
-            <th class="th-sub">SUBJEK / TUJUAN</th>
-            <th class="th-jenis">JENIS</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="cetak-footer">
-        Dijana oleh Sistem Tempahan ${escapeHtml(bilik)} &nbsp;·&nbsp; ${tarSk}
-      </div>
-    </div>`;
-
-  document.getElementById('cetakOverlay').classList.add('open');
-}
-
-function tutupCetak() {
-  document.getElementById('cetakOverlay').classList.remove('open');
-}
-
-function cetakSekarang() {
-  window.print();
 }
 
 // ─── BATAL TEMPAHAN ──────────────────────────────────────────

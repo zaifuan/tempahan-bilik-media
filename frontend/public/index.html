@@ -62,16 +62,17 @@
         <div class="date-nav">
           <button class="date-nav-btn" onclick="changeDate(-1)" aria-label="Hari sebelum">&#8592;</button>
           <div class="date-display-wrap">
-            <div class="date-display">
-              <span>&#128197;</span>
+            <div class="date-display" role="button" tabindex="0">
+              <span class="dd-ic">&#128197;</span>
               <span id="dateDisplay">Memuatkan...</span>
             </div>
             <input type="date" id="datePicker" class="date-picker-hidden"
               onchange="onDatePickerChange()" aria-label="Pilih tarikh"/>
           </div>
           <button class="date-nav-btn" onclick="changeDate(1)" aria-label="Hari berikut">&#8594;</button>
+        </div>
+        <div class="date-today-row">
           <button class="btn-today" id="btnToday" onclick="setToday()">Hari Ini</button>
-          <button class="btn-papar" onclick="paparJadualHarian()" title="Paparan jadual">&#128438; Papar</button>
         </div>
 
         <!-- Slot Grid -->
@@ -230,20 +231,6 @@
       </div>
 
     </div>
-  </div>
-</div>
-
-<!-- ══ OVERLAY PAPAR/CETAK ══ -->
-<div class="cetak-overlay" id="cetakOverlay" onclick="if(event.target===this)tutupCetak()">
-  <div class="cetak-modal">
-    <div class="cetak-actions">
-      <span class="cetak-actions-title">&#128438; Paparan Jadual</span>
-      <div style="display:flex;gap:8px">
-        <button class="btn-cetak-print" onclick="cetakSekarang()">&#128424; Cetak</button>
-        <button class="btn-cetak-tutup" onclick="tutupCetak()">&#10005; Tutup</button>
-      </div>
-    </div>
-    <div id="cetakBody" class="cetak-body"></div>
   </div>
 </div>
 
