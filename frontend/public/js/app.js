@@ -776,12 +776,8 @@ async function onGuruChange() {
     if(grid) grid.innerHTML='<div class="empty"><div class="ei">👆</div><p>Pilih guru untuk lihat jadual</p></div>';
     return;
   }
-  if (!hari || hari==='AHAD'||hari==='SABTU') {
-    if(grid) grid.innerHTML='<div class="empty"><div class="ei">🌴</div><p>Tarikh ini bukan hari persekolahan</p></div>';
-    return;
-  }
-  if (isHolidayJS(tarikh)) {
-    if(grid) grid.innerHTML='<div class="empty"><div class="ei">🎉</div><p>Tarikh ini adalah hari cuti</p></div>';
+  if (!hari) {
+    if(grid) grid.innerHTML='<div class="empty"><div class="ei">📅</div><p>Tarikh tidak sah</p></div>';
     return;
   }
 
@@ -925,19 +921,14 @@ function validateUmum() {
   const tuju  = document.getElementById('fTujuan')?.value.trim();
   const hari  = getHariDariTarikhJS(tarikh);
 
-  const valid = guru && tarikh && mula && tamat && tuju && mula<tamat
-    && hari !== 'AHAD' && hari !== 'SABTU' && !isHolidayJS(tarikh);
+  const valid = guru && tarikh && mula && tamat && tuju && mula<tamat;
 
   const btn = document.getElementById('btnTempahUmum');
   if (btn) btn.disabled = !valid;
 
   const warn = document.getElementById('umumWarn');
   if (warn) {
-    if (hari==='AHAD'||hari==='SABTU') {
-      warn.style.display='block'; warn.textContent='⚠️ Tarikh ini adalah hujung minggu.';
-    } else if (isHolidayJS(tarikh)) {
-      warn.style.display='block'; warn.textContent='⚠️ Tarikh ini adalah hari cuti.';
-    } else if (mula&&tamat&&mula>=tamat) {
+    if (mula&&tamat&&mula>=tamat) {
       warn.style.display='block'; warn.textContent='⚠️ Masa tamat mesti lebih lewat dari masa mula.';
     } else {
       warn.style.display='none';

@@ -48,7 +48,7 @@ async function getTempahan(tarikhYMD) {
 // ============================================================
 async function getJadualGuruTarikh(namaGuru, tarikhYMD) {
   const hari = getHariDariTarikh(tarikhYMD);
-  if (!hari || hari === 'AHAD' || hari === 'SABTU') {
+  if (!hari) {
     return { hari, tarikh: tarikhYMD, isClosed: true, data: [] };
   }
 
@@ -105,41 +105,11 @@ async function getJadualTarikh(tarikhYMD) {
   const cfg = await getConfig();
   const hari = getHariDariTarikh(tarikhYMD);
 
-  // Cuti
-  if (isHoliday(tarikhYMD, cfg)) {
-    return {
-      tarikh: tarikhYMD, hari,
-      isHoliday: true,
-      holidayLabel: cfg.holidayLabels[tarikhYMD] || 'Cuti Umum',
-      slots: [], tempahan: []
-    };
-  }
-
-  // Hujung minggu
-  if (hari === 'AHAD' || hari === 'SABTU') {
-    return { tarikh: tarikhYMD, hari, isWeekend: true, slots: [], tempahan: [] };
-  }
-
+  // Bilik media sentiasa beroperasi: tiada sekatan cuti / hujung minggu.
   const tempahan = await getTempahan(tarikhYMD);
-  const disabled = getDisabledForHari(cfg, hari);
 
-  // Pilihan B (sama dengan GAS): tunjuk booking + disabled SAHAJA
-  // Jika booking bertindih dengan disabled slot, booking menang
+  // Bilik media tiada slot rehat / disabled — papar tempahan sahaja.
   const events = [];
-
-  disabled.forEach(d => {
-    const bertindih = tempahan.some(t =>
-      isTimeOverlap(d.startMin, d.endMin, t.startMin, t.endMin));
-    if (bertindih) return;
-    events.push({
-      type: 'disabled',
-      slot: d.masa,
-      startMin: d.startMin, endMin: d.endMin,
-      status: 'DISABLED',
-      disabledLabel: d.keterangan || (hari === 'JUMAAT' ? 'Rehat / Solat Jumaat' : 'Waktu Rehat'),
-      items: []
-    });
-  });
 
   tempahan.forEach(t => {
     events.push({
@@ -370,8 +340,8 @@ async function validasiAsas(payload, cfg, options = {}) {
   if (!tarikhYMD) throw new Error('Tarikh tidak diberikan.');
 
   const hari = getHariDariTarikh(tarikhYMD);
-  if (!hari || hari === 'AHAD' || hari === 'SABTU')
-    throw new Error('Tidak boleh membuat tempahan pada hujung minggu.');
+  if (!hari)
+    throw new Error('Tarikh tidak sah.');
 
   if (!allowOverride) {
     const today = parseTarikhYMD(todayYMD());
@@ -385,8 +355,7 @@ async function validasiAsas(payload, cfg, options = {}) {
       throw new Error(`Tempahan hanya dibenarkan sehingga ${cfg.MAX_BOOKING_DAY} hari ke hadapan.`);
   }
 
-  if (isHoliday(tarikhYMD, cfg))
-    throw new Error('Tarikh ini adalah hari cuti. Tempahan tidak dibenarkan.');
+  // Bilik media boleh ditempah pada hari cuti — tiada sekatan cuti.
 
   if (!guru || !String(guru).trim())
     throw new Error('Nama guru tidak diberikan.');
@@ -423,13 +392,7 @@ async function buatTempahanUmum(payload, options = {}) {
   if (!p) throw new Error('Format masa tidak sah.');
   if (p.startMin >= p.endMin) throw new Error('Masa tamat mesti selepas masa mula.');
 
-  // Block waktu rehat?
-  if (cfg.BLOCK_REST_TIME && !byAdmin) {
-    const disabled = getDisabledForHari(cfg, hari);
-    const bertindih = disabled.some(d =>
-      isTimeOverlap(p.startMin, p.endMin, d.startMin, d.endMin));
-    if (bertindih) throw new Error('Masa ini bertindih dengan waktu rehat / solat.');
-  }
+  // Bilik media tiada waktu rehat / solat — tiada sekatan slot.
 
   // Had bulanan (hanya untuk guru biasa, bukan admin override)
   if (!byAdmin) {
@@ -543,16 +506,7 @@ async function buatTempahanPDP(payload, options = {}) {
         continue;
       }
 
-      // Block disabled (kecuali admin)
-      if (!byAdmin && cfg.BLOCK_REST_TIME) {
-        const disabled = getDisabledForHari(cfg, hari);
-        const bertindih = disabled.some(d =>
-          isTimeOverlap(p.startMin, p.endMin, d.startMin, d.endMin));
-        if (bertindih) {
-          gagal.push({ masa: masaNorm, kelas: slot.kelas || '', sebab: 'Slot waktu rehat / solat' });
-          continue;
-        }
-      }
+      // Bilik media tiada waktu rehat / solat — tiada sekatan slot.
 
       const konflik = await semakKonflik(tarikhYMD, p.startMin, p.endMin, client);
       if (konflik.adaKonflik) {
