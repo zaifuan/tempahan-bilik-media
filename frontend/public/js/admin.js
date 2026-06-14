@@ -159,6 +159,59 @@ async function loadDashboard() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// SYNC GOOGLE SHEET
+// ═══════════════════════════════════════════════════════════
+async function doSyncSheet() {
+  const btn = document.getElementById('btnSyncSheet');
+  const box = document.getElementById('syncResult');
+  if (!btn) return;
+
+  const labelAsal = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> ⏳ Sedang Sync...';
+  if (box) box.style.display = 'none';
+
+  try {
+    const r = await API.post('/sync/google-sheet');
+
+    // Endpoint pulang { success, message, data:{ guru, jadualGuru } } jika berjaya.
+    // Jika gagal/401: { success:false, error } atau { ok:false, error }.
+    if (r && r.success === true) {
+      const d = r.data || {};
+      const guru   = (d.guru != null) ? d.guru : '—';
+      const jadual = (d.jadualGuru != null) ? d.jadualGuru : '—';
+      const masa   = new Date().toLocaleTimeString('ms-MY', { hour12: false });
+
+      if (box) {
+        box.className = 'info-box';
+        box.textContent = '✅ Sync berjaya\nGuru: ' + guru + '\nJadual: ' + jadual + '\nMasa: ' + masa;
+        box.style.display = 'block';
+      }
+      showToast('✅ Sync berjaya', 'ok');
+      await loadDashboard();   // refresh kad statistik & log aktiviti
+    } else {
+      const msg = (r && (r.error || r.message)) || 'Ralat tidak diketahui.';
+      if (box) {
+        box.className = 'warn-box';
+        box.textContent = '❌ Sync gagal\n' + msg;
+        box.style.display = 'block';
+      }
+      showToast('❌ Sync gagal', 'err');
+    }
+  } catch (e) {
+    if (box) {
+      box.className = 'warn-box';
+      box.textContent = '❌ Sync gagal\n' + e.message;
+      box.style.display = 'block';
+    }
+    showToast('❌ Sync gagal', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = labelAsal;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // BOOKINGS
 // ═══════════════════════════════════════════════════════════
 async function loadBookings() {
@@ -271,7 +324,9 @@ async function loopCancelBookings(ids, reason) {
   var msg = success + ' berjaya dibatalkan' + (fail ? ', ' + fail + ' gagal' : '') + '.';
   showToast((fail ? '⚠️ ' : '✅ ') + msg, fail ? 'err' : 'ok');
   loadBookings();
-}// ═══════════════════════════════════════════════════════════
+}
+
+// ═══════════════════════════════════════════════════════════
 // TEACHERS
 // ═══════════════════════════════════════════════════════════
 async function loadTeachers() {
