@@ -73,6 +73,13 @@
     <!-- ── DASHBOARD ── -->
     <section class="admin-section active" id="tab-dashboard">
       <h2>Dashboard</h2>
+
+      <!-- ── SYNC GOOGLE SHEET ── -->
+      <div class="dash-sync" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px">
+        <button class="btn btn-hijau btn-auto" id="btnSyncSheet" type="button" onclick="doSyncSheet()">🔄 Sync Google Sheet</button>
+      </div>
+      <div id="syncResult" style="display:none;white-space:pre-line"></div>
+
       <div class="dash-grid" id="dashStats">
         <div class="loading"><div class="spinner"></div> Memuatkan...</div>
       </div>
@@ -195,6 +202,6 @@
   </div>
 </div>
 
-<script src="/js/admin.js?v=3"></script>
+<script src="/js/admin.js?v=4"></script>
 </body>
 </html>
