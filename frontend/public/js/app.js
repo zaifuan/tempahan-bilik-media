@@ -240,17 +240,17 @@ function initDatePicker() {
   picker.max     = maxDate;
   picker.value   = APP.tarikhDipilih;
   updateDateDisplay();
+}
 
-  const dateDisplay = document.querySelector('.date-display');
-  if (dateDisplay) {
-    dateDisplay.addEventListener('click', () => {
-      try {
-        if (picker.showPicker) picker.showPicker();
-        else picker.click();
-      } catch (e) {
-        try { picker.click(); } catch (_) {}
-      }
-    });
+// Buka date picker / kalendar — guna showPicker() jika ada, jika tidak fallback ke focus()+click().
+function bukaDatePicker() {
+  const picker = document.getElementById('datePicker');
+  if (!picker) return;
+  try {
+    if (typeof picker.showPicker === 'function') picker.showPicker();
+    else { picker.focus(); picker.click(); }
+  } catch (e) {
+    try { picker.focus(); picker.click(); } catch (_) {}
   }
 }
 

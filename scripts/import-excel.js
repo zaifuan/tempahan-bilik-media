@@ -21,7 +21,7 @@ const path = require('path');
 const XLSX = require('xlsx');
 const { pool, query, transaction } = require('../backend/src/db');
 const {
-  normalizeTimeFormat, parseMasa,
+  normalizeTimeFormat, parseMasa, parseMasaJadual,
   normalizeTarikh, isNamaSesuai
 } = require('../backend/src/utils/time');
 
@@ -89,7 +89,7 @@ if (!filePath) {
       const subjek = String(r[4] || '').trim().toUpperCase();
 
       if (!hari || !kelas || !masa) continue;
-      const p = parseMasa(masa);
+      const p = parseMasaJadual(masa);   // betulkan slot petang 12-jam → 24-jam
       if (!p) { console.warn(`   ⚠ Baris ${i + 1}: masa "${r[2]}" tidak sah`); continue; }
 
       kelasSet.add(kelas);

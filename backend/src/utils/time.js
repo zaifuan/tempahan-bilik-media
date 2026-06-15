@@ -48,6 +48,52 @@ function isTimeOverlap(s1, e1, s2, e2) {
   return s1 < e2 && s2 < e1;
 }
 
+// ── Parser khas JADUAL SEKOLAH (membetulkan slot petang yang ditulis 12-jam) ──
+// Tukar SATU komponen masa jadual → minit sejak tengah malam (24-jam):
+//   - Ikut penanda "AM"/"PM" jika ada:  "1:00 PM" → 780,  "12:00 AM" → 0
+//   - Tiada penanda & jam jatuh SEBELUM waktu sekolah (sebelum 07:00) → dianggap
+//     PETANG, tambah 12 jam:  "1:00" → 13:00,  "2:30" → 14:30
+//     (Sekolah tidak beroperasi 00:00–06:59, jadi 12-jam 1–6 mesti petang.)
+//   - Masa 24-jam yang sudah betul KEKAL (idempoten):  "13:00" → 780,  "07:40" → 460
+function jadualTimeToMin(comp) {
+  if (comp === null || comp === undefined || comp === '') return NaN;
+  let s = String(comp).trim().toUpperCase().replace(/\./g, ':');
+  let marker = null;                       // 'PM' | 'AM' | null
+  if (s.includes('PM')) marker = 'PM';
+  else if (s.includes('AM')) marker = 'AM';
+  s = s.replace(/[AP]M/g, '').trim();
+  const parts = s.split(':');
+  let h = Number(parts[0]);
+  const m = Number(parts[1] || 0);
+  if (isNaN(h) || isNaN(m)) return NaN;
+  if (marker === 'PM')      { if (h < 12) h += 12; }   // 1 PM → 13, 12 PM → 12
+  else if (marker === 'AM') { if (h === 12) h = 0; }   // 12 AM → 00
+  let min = h * 60 + m;
+  if (marker === null && min < 420) min += 720;        // tiada penanda & sebelum 07:00 → petang
+  return min;
+}
+
+// Parse julat masa jadual "H:MM-H:MM" → 24-jam { startStr, endStr, startMin, endMin, masa }.
+// Sama bentuk hasil dengan parseMasa() tetapi membetulkan slot petang 12-jam.
+function parseMasaJadual(masaStr) {
+  if (!masaStr) return null;
+  const norm = normalizeTimeFormat(masaStr);
+  const parts = norm.split('-');
+  if (parts.length !== 2) return null;
+  const sMin = jadualTimeToMin(parts[0]);
+  const eMin = jadualTimeToMin(parts[1]);
+  if (isNaN(sMin) || isNaN(eMin)) return null;
+  const fmt = (min) =>
+    `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  return {
+    startStr: fmt(sMin),
+    endStr: fmt(eMin),
+    startMin: sMin,
+    endMin: eMin,
+    masa: `${fmt(sMin)}-${fmt(eMin)}`
+  };
+}
+
 // Date → "YYYY-MM-DD"
 function formatToYMD(date) {
   const y = date.getFullYear();
@@ -181,6 +227,8 @@ module.exports = {
   normalizeTimeFormat,
   timeStrToMin,
   parseMasa,
+  jadualTimeToMin,
+  parseMasaJadual,
   isTimeOverlap,
   formatToYMD,
   parseTarikhYMD,

@@ -62,11 +62,13 @@
         <div class="date-nav">
           <button class="date-nav-btn" onclick="changeDate(-1)" aria-label="Hari sebelum">&#8592;</button>
           <div class="date-display-wrap">
-            <div class="date-display" role="button" tabindex="0">
+            <div class="date-display" role="button" tabindex="0"
+              onclick="bukaDatePicker()"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();bukaDatePicker();}">
               <span class="dd-ic">&#128197;</span>
               <span id="dateDisplay">Memuatkan...</span>
             </div>
-            <input type="date" id="datePicker" class="date-picker-hidden"
+            <input type="date" id="datePicker" class="date-picker-hidden" tabindex="-1"
               onchange="onDatePickerChange()" aria-label="Pilih tarikh"/>
           </div>
           <button class="date-nav-btn" onclick="changeDate(1)" aria-label="Hari berikut">&#8594;</button>
