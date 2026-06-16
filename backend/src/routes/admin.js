@@ -73,7 +73,7 @@ router.get('/me', (req, res) => {
 router.get('/dashboard', async (req, res) => {
   try {
     const today = todayYMD();
-    const [tg, kg, jl, tnow, tbb, log] = await Promise.all([
+    const [tg, kg, jl, tnow, tbb, sd, log] = await Promise.all([
       query(`SELECT COUNT(*) AS n FROM teachers WHERE aktif = TRUE`),
       query(`SELECT COUNT(*) AS n FROM classes WHERE aktif = TRUE`),
       query(`SELECT COUNT(*) AS n FROM teacher_schedule`),
@@ -84,12 +84,13 @@ router.get('/dashboard', async (req, res) => {
         AND EXTRACT(MONTH FROM tarikh) = EXTRACT(MONTH FROM NOW())
         AND EXTRACT(YEAR FROM tarikh) = EXTRACT(YEAR FROM NOW())
       `),
+      query(`SELECT COUNT(*) AS n FROM disabled_slots WHERE aktif = TRUE`),
       query(`
         SELECT bl.action, bl.by_user, bl.reason, bl.at, b.guru, b.masa,
                TO_CHAR(b.tarikh, 'YYYY-MM-DD') AS tarikh
         FROM booking_logs bl
         LEFT JOIN bookings b ON b.id = bl.booking_id
-        ORDER BY bl.at DESC LIMIT 20
+        ORDER BY bl.at DESC LIMIT 10
       `)
     ]);
 
@@ -101,6 +102,7 @@ router.get('/dashboard', async (req, res) => {
         totalJadual: Number(jl.rows[0].n),
         tempahanHariIni: Number(tnow.rows[0].n),
         tempahanBulanIni: Number(tbb.rows[0].n),
+        slotDitutup: Number(sd.rows[0].n),
         recentLogs: log.rows
       }
     });
@@ -577,6 +579,54 @@ router.put('/settings/:key', async (req, res) => {
     const { value, data_type } = req.body;
     await settings.setSetting(req.params.key, value, data_type || 'string');
     res.json({ ok: true });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// AKAUN SAYA — kemaskini username & password admin yang log masuk
+// UI ringkas (sekolah hanya ada seorang pentadbir).
+// Hanya menyentuh rekod admin SEMASA; logik login/auth tidak diubah.
+// Guna mekanisme hash sedia ada (bcrypt cost 10).
+// ============================================================
+router.put('/account', async (req, res) => {
+  try {
+    const id = req.admin.id;
+    const username = (req.body.username || '').trim();
+    const password = req.body.password || '';
+
+    if (!username) {
+      return res.json({ ok: false, error: 'Username diperlukan.' });
+    }
+
+    // Pastikan username tidak bertembung dengan admin lain
+    const dup = await query(
+      `SELECT id FROM admin_users WHERE username = $1 AND id <> $2`,
+      [username, id]
+    );
+    if (dup.rows.length) {
+      return res.json({ ok: false, error: 'Username sudah digunakan.' });
+    }
+
+    if (password) {
+      if (password.length < 6) {
+        return res.json({ ok: false, error: 'Password minimum 6 aksara.' });
+      }
+      const hash = await bcrypt.hash(password, 10);
+      await query(
+        `UPDATE admin_users SET username = $2, password_hash = $3 WHERE id = $1`,
+        [id, username, hash]
+      );
+    } else {
+      // Password kosong → kemaskini username sahaja
+      await query(
+        `UPDATE admin_users SET username = $2 WHERE id = $1`,
+        [id, username]
+      );
+    }
+
+    res.json({ ok: true, username });
   } catch (e) {
     res.json({ ok: false, error: e.message });
   }

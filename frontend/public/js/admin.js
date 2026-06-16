@@ -62,12 +62,7 @@ function showApp() {
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('appView').style.display = 'block';
   document.getElementById('adminName').textContent =
-    `👤 ${CURRENT_ADMIN.nama || CURRENT_ADMIN.username}` +
-    (CURRENT_ADMIN.role === 'superadmin' ? ' [super]' : '');
-
-  // Hide "+ Tambah Admin" if not superadmin
-  const btn = document.getElementById('btnNewAdmin');
-  if (btn && CURRENT_ADMIN.role !== 'superadmin') btn.style.display = 'none';
+    `👤 ${CURRENT_ADMIN.username || CURRENT_ADMIN.nama || 'Admin'}`;
 
   // Default tab
   loadDashboard();
@@ -120,7 +115,6 @@ function showTab(name, btn) {
     case 'settings' : loadSettings(); break;
     case 'disabled' : loadDisabled(); break;
     case 'holidays' : loadHolidays(); break;
-    case 'admins'   : loadAdmins(); break;
   }
 }
 
@@ -135,22 +129,22 @@ async function loadDashboard() {
 
   const d = r.data;
   el.innerHTML = `
-    <div class="dash-stat"><div class="dash-stat-num">${d.totalGuru}</div><div class="dash-stat-lbl">Jumlah Guru Aktif</div></div>
-    <div class="dash-stat"><div class="dash-stat-num">${d.totalKelas}</div><div class="dash-stat-lbl">Jumlah Kelas</div></div>
-    <div class="dash-stat"><div class="dash-stat-num">${d.totalJadual}</div><div class="dash-stat-lbl">Jumlah Jadual Mengajar</div></div>
     <div class="dash-stat"><div class="dash-stat-num">${d.tempahanHariIni}</div><div class="dash-stat-lbl">Tempahan Hari Ini</div></div>
     <div class="dash-stat"><div class="dash-stat-num">${d.tempahanBulanIni}</div><div class="dash-stat-lbl">Tempahan Bulan Ini</div></div>
+    <div class="dash-stat"><div class="dash-stat-num">${d.totalGuru}</div><div class="dash-stat-lbl">Guru Aktif</div></div>
+    <div class="dash-stat"><div class="dash-stat-num">${d.slotDitutup != null ? d.slotDitutup : 0}</div><div class="dash-stat-lbl">Slot Ditutup</div></div>
   `;
 
-  if (!d.recentLogs.length) {
-    lg.innerHTML = '<div class="empty"><div class="ei">📭</div><p>Tiada log aktiviti</p></div>';
+  const logs = (d.recentLogs || []).slice(0, 10);
+  if (!logs.length) {
+    lg.innerHTML = '<div class="empty"><div class="ei">📭</div><p>Tiada aktiviti</p></div>';
   } else {
-    lg.innerHTML = d.recentLogs.map(l => {
+    lg.innerHTML = logs.map(l => {
       const t = new Date(l.at);
       const tstr = t.toLocaleString('ms-MY', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
       const action = (l.action || '').toLowerCase();
       return `<div class="log-item">
-        <span class="log-action ${action.includes('batal')?'batal':''}">${escapeHtml(l.action||'—')}</span>
+        <span class="log-action ${action.includes('batal')||action.includes('cancel')?'batal':''}">${escapeHtml(l.action||'—')}</span>
         <span class="log-meta">${escapeHtml(l.guru||'—')} · ${escapeHtml(l.tarikh||'—')} ${escapeHtml(l.masa||'')}</span>
         <span class="log-time">${tstr}</span>
       </div>`;
@@ -626,9 +620,26 @@ async function loadSettings() {
   const r = await API.get('/settings');
   const el = document.getElementById('settingsForm');
   if (!r.ok) { el.innerHTML = `<div class="warn-box">${escapeHtml(r.error)}</div>`; return; }
-  if (!r.data.length) { el.innerHTML = '<div class="empty"><div class="ei">📭</div><p>Tiada tetapan</p></div>'; return; }
 
-  el.innerHTML = `
+  const uname = (CURRENT_ADMIN && CURRENT_ADMIN.username) ? CURRENT_ADMIN.username : '';
+  const akaunHtml = `
+    <div class="dash-card" style="margin-bottom:18px;max-width:480px">
+      <h3>Akaun</h3>
+      <div class="fg">
+        <label>Username</label>
+        <input class="fc" id="accUser" value="${escapeHtml(uname)}" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input class="fc" id="accPass" type="password" placeholder="Biar kosong jika tidak mahu tukar" autocomplete="new-password"/>
+      </div>
+      <button class="btn btn-hijau btn-auto" onclick="saveAccount()">Simpan Akaun</button>
+    </div>
+  `;
+
+  const settingsHtml = !r.data.length
+    ? '<div class="empty"><div class="ei">📭</div><p>Tiada tetapan</p></div>'
+    : `
     <div class="info-box">
       Tetapan ini disimpan dalam database dan menggantikan nilai default. Klik Simpan untuk setiap baris yang ditukar.
     </div>
@@ -647,6 +658,24 @@ async function loadSettings() {
       <button class="btn btn-ghost btn-auto" onclick="clearCache()">🔄 Clear Settings Cache</button>
     </div>
   `;
+
+  el.innerHTML = akaunHtml + settingsHtml;
+}
+async function saveAccount() {
+  const username = document.getElementById('accUser').value.trim();
+  const password = document.getElementById('accPass').value;
+  if (!username) { showToast('Username diperlukan','err'); return; }
+  if (password && password.length < 6) { showToast('Password minimum 6 aksara','err'); return; }
+
+  const r = await API.put('/account', { username: username, password: password });
+  if (!r.ok) { showToast('⚠️ ' + (r.error || 'Gagal'), 'err'); return; }
+
+  if (CURRENT_ADMIN) CURRENT_ADMIN.username = r.username || username;
+  const nameEl = document.getElementById('adminName');
+  if (nameEl) nameEl.textContent = `👤 ${CURRENT_ADMIN.username}`;
+  const passEl = document.getElementById('accPass');
+  if (passEl) passEl.value = '';
+  showToast(password ? '✅ Akaun & password dikemaskini' : '✅ Username dikemaskini','ok');
 }
 async function saveSetting(key) {
   const val = document.getElementById('set-' + key).value;
@@ -782,78 +811,6 @@ async function deleteHoliday(id) {
   const r = await API.del('/holidays/' + id);
   showToast(r.ok ? '✅ Berjaya' : ('⚠️ '+r.error), r.ok?'ok':'err');
   if (r.ok) loadHolidays();
-}
-
-// ═══════════════════════════════════════════════════════════
-// ADMIN USERS
-// ═══════════════════════════════════════════════════════════
-async function loadAdmins() {
-  const r = await API.get('/admins');
-  const el = document.getElementById('adminsTable');
-  if (!r.ok) { el.innerHTML = `<div class="warn-box">${escapeHtml(r.error)}</div>`; return; }
-  if (!r.data.length) { el.innerHTML = '<div class="empty"><div class="ei">📭</div><p>Tiada admin</p></div>'; return; }
-
-  const isSuper = CURRENT_ADMIN.role === 'superadmin';
-  const rows = r.data.map(a => `<tr class="${!a.aktif?'inactive':''}">
-    <td>${escapeHtml(a.username)}</td>
-    <td>${escapeHtml(a.nama_penuh||'')}</td>
-    <td><span class="badge ${a.role==='superadmin'?'badge-super':'badge-role'}">${a.role}</span></td>
-    <td>${a.last_login ? new Date(a.last_login).toLocaleString('ms-MY') : '—'}</td>
-    <td><span class="badge badge-${a.aktif?'aktif':'tidak'}">${a.aktif?'Aktif':'Tidak'}</span></td>
-    <td class="actions">
-      <button class="action-btn action-pwd" onclick="changePassword(${a.id},'${escapeHtml(a.username)}')">Tukar Pwd</button>
-      ${isSuper && a.id !== CURRENT_ADMIN.id ? `<button class="action-btn action-del" onclick="deleteAdmin(${a.id})">Padam</button>` : ''}
-    </td>
-  </tr>`).join('');
-  el.innerHTML = `
-    <div class="atable-wrap"><table class="atable">
-      <thead><tr><th>Username</th><th>Nama Penuh</th><th>Role</th><th>Log Masuk Terakhir</th><th>Status</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
-}
-function openAdminModal() {
-  if (CURRENT_ADMIN.role !== 'superadmin') { showToast('Hanya superadmin boleh tambah admin','err'); return; }
-  showAdminModal('Tambah Admin', `
-    <div class="fg"><label>Username <span>*</span></label>
-      <input class="fc" id="aUser" required/></div>
-    <div class="fg"><label>Password <span>*</span></label>
-      <input class="fc" id="aPass" type="password" required/></div>
-    <div class="fg"><label>Nama Penuh</label>
-      <input class="fc" id="aNama"/></div>
-    <div class="fg"><label>Role</label>
-      <select class="fc" id="aRole">
-        <option value="admin">admin</option>
-        <option value="superadmin">superadmin</option>
-      </select></div>
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="closeAdminModal()">Batal</button>
-      <button class="btn btn-hijau" onclick="saveAdmin()">Simpan</button>
-    </div>
-  `);
-}
-async function saveAdmin() {
-  const body = {
-    username:   document.getElementById('aUser').value.trim(),
-    password:   document.getElementById('aPass').value,
-    nama_penuh: document.getElementById('aNama').value.trim(),
-    role:       document.getElementById('aRole').value,
-  };
-  if (!body.username||!body.password) { showToast('Username & password wajib','err'); return; }
-  const r = await API.post('/admins', body);
-  showToast(r.ok ? '✅ Berjaya' : ('⚠️ '+r.error), r.ok?'ok':'err');
-  if (r.ok) { closeAdminModal(); loadAdmins(); }
-}
-async function changePassword(id, username) {
-  const pwd = prompt(`Password baru untuk ${username}:`);
-  if (!pwd) return;
-  const r = await API.put(`/admins/${id}/password`, { password: pwd });
-  showToast(r.ok ? '✅ Berjaya' : ('⚠️ '+r.error), r.ok?'ok':'err');
-}
-async function deleteAdmin(id) {
-  if (!confirm('Padam admin ini?')) return;
-  const r = await API.del('/admins/' + id);
-  showToast(r.ok ? '✅ Berjaya' : ('⚠️ '+r.error), r.ok?'ok':'err');
-  if (r.ok) loadAdmins();
 }
 
 // ═══════════════════════════════════════════════════════════

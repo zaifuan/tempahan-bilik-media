@@ -64,7 +64,6 @@
       <button class="tab-btn" data-tab="settings" onclick="showTab('settings',this)">⚙️ Tetapan</button>
       <button class="tab-btn" data-tab="disabled" onclick="showTab('disabled',this)">⏸️ Disabled Slots</button>
       <button class="tab-btn" data-tab="holidays" onclick="showTab('holidays',this)">🎉 Cuti</button>
-      <button class="tab-btn" data-tab="admins" onclick="showTab('admins',this)">🔑 Admin Users</button>
     </nav>
   </header>
 
@@ -84,7 +83,7 @@
         <div class="loading"><div class="spinner"></div> Memuatkan...</div>
       </div>
       <div class="dash-card">
-        <h3>Log Aktiviti Terkini</h3>
+        <h3>Aktiviti Terkini</h3>
         <div id="dashLogs"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
       </div>
     </section>
@@ -179,15 +178,6 @@
       <div id="holidaysTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
     </section>
 
-    <!-- ── ADMIN USERS ── -->
-    <section class="admin-section" id="tab-admins">
-      <div class="sec-header">
-        <h2>Admin Users</h2>
-        <button class="btn btn-hijau btn-auto" id="btnNewAdmin" onclick="openAdminModal()">+ Tambah Admin</button>
-      </div>
-      <div id="adminsTable"><div class="loading"><div class="spinner"></div> Memuatkan...</div></div>
-    </section>
-
   </main>
 </div>
 
@@ -202,6 +192,6 @@
   </div>
 </div>
 
-<script src="/js/admin.js?v=4"></script>
+<script src="/js/admin.js?v=5"></script>
 </body>
 </html>
