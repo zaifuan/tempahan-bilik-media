@@ -25,21 +25,31 @@ function timeStrToMin(t) {
   return Number(p[0]) * 60 + Number(p[1] || 0);
 }
 
-// Parse "HH:MM-HH:MM" → { startStr, endStr, startMin, endMin }
+// Parse "HH:MM-HH:MM" → { startStr, endStr, startMin, endMin } (format 24-jam)
+//
+// Sama seperti parseMasaJadual: membetulkan slot petang yang ditulis 12-jam
+// (tanpa penanda AM/PM) menjadi 24-jam, supaya selari dengan import Excel.
+//   "1:00-2:00"   → "13:00-14:00"  (petang, kerana sebelum 07:00)
+//   "13:00-14:30" → "13:00-14:30"  (24-jam, idempoten — tiada perubahan)
+//   "12:00-13:00" → "12:00-13:00"  (tengahari, kekal)
+//   "07:40-08:20" → "07:40-08:20"  (pagi, kekal)
+// Format 24-jam sedia ada dalam database TIDAK berubah (idempoten).
 function parseMasa(masaStr) {
   if (!masaStr) return null;
   const norm = normalizeTimeFormat(masaStr);
   const parts = norm.split('-');
   if (parts.length !== 2) return null;
-  const sMin = timeStrToMin(parts[0]);
-  const eMin = timeStrToMin(parts[1]);
+  const sMin = jadualTimeToMin(parts[0]);
+  const eMin = jadualTimeToMin(parts[1]);
   if (isNaN(sMin) || isNaN(eMin)) return null;
+  const fmt = (min) =>
+    `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
   return {
-    startStr: parts[0].trim(),
-    endStr: parts[1].trim(),
+    startStr: fmt(sMin),
+    endStr: fmt(eMin),
     startMin: sMin,
     endMin: eMin,
-    masa: norm
+    masa: `${fmt(sMin)}-${fmt(eMin)}`
   };
 }
 
