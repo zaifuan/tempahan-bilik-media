@@ -24,6 +24,14 @@ const APP = {
   },
   statusTimer   : null,
   refreshTimer  : null,
+  // Tab Rekod: bulan/tahun dipilih (default: bulan semasa)
+  rekod: {
+    bulan       : new Date().getMonth() + 1, // 1-12
+    tahun       : new Date().getFullYear(),
+    cariSudah   : '',
+    cariBelum   : '',
+    data        : null,  // cache statistik terkini
+  },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -59,7 +67,11 @@ const API = {
   getJadualGuruTarikh: (guru, date) => API.get(`/jadual-guru?teacher=${encodeURIComponent(guru)}&date=${encodeURIComponent(date)}`),
   getTempahan    : (date) => API.get(`/tempahan?date=${encodeURIComponent(date)}`),
   getStatusSekarang: () => API.get('/status-sekarang'),
-  getStatistik   : () => API.get('/statistik'),
+  getStatistik   : (bulan, tahun) => {
+    let qs = '';
+    if (bulan && tahun) qs = `?bulan=${encodeURIComponent(bulan)}&tahun=${encodeURIComponent(tahun)}`;
+    return API.get('/statistik' + qs);
+  },
   getSenaraGuru  : () => API.get('/teachers'),
   getTempahanSaya: (guru) => API.get(`/tempahan-saya?teacher=${encodeURIComponent(guru)}`),
   buatTempahanPDP: (payload) => API.post('/tempahan/pdp', payload),
@@ -477,57 +489,225 @@ function renderStatusBilik(res) {
 }
 
 // ─── STATISTIK ────────────────────────────────────────────────
+// ─── STATISTIK / REKOD BULANAN ────────────────────────────────
 async function loadStatistik() {
-  const res = await API.getStatistik();
-  if (res.ok) renderStatistik(res.data);
+  const el = document.getElementById('statBlockRekod');
+  if (el && !APP.rekod.data) {
+    el.innerHTML = '<div class="loading"><div class="spinner"></div> Memuatkan rekod...</div>';
+  }
+  const res = await API.getStatistik(APP.rekod.bulan, APP.rekod.tahun);
+  if (res.ok) {
+    APP.rekod.data = res.data;
+    renderStatistik(res.data);
+  } else {
+    if (el) el.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${escapeHtml(res.error || 'Gagal muatkan rekod')}</p></div>`;
+  }
+}
+
+// Cipta <option> untuk pemilih bulan (12 bulan kebelakang + bulan semasa)
+function buildRekodMonthOptions() {
+  const now = new Date();
+  const curB = now.getMonth() + 1;   // 1-12
+  const curY = now.getFullYear();
+  const opts = [];
+  // 13 bulan ke belakang (termasuk bulan semasa) — cukup untuk bulan lepas dll
+  for (let i = 0; i < 13; i++) {
+    const d = new Date(curY, curB - 1 - i, 1);
+    const b = d.getMonth() + 1;
+    const y = d.getFullYear();
+    const val = `${b}-${y}`;
+    const label = `${BULAN_PENUH[b]} ${y}`;
+    const isCur = (b === curB && y === curY);
+    opts.push(`<option value="${val}"${(b===APP.rekod.bulan&&y===APP.rekod.tahun)?' selected':''}>${escapeHtml(label)}${isCur?' (semasa)':''}</option>`);
+  }
+  return opts.join('');
+}
+
+function onRekodBulanChange() {
+  const sel = document.getElementById('rekodBulanSel');
+  if (!sel || !sel.value) return;
+  const [b, y] = sel.value.split('-').map(Number);
+  APP.rekod.bulan = b;
+  APP.rekod.tahun = y;
+  APP.rekod.cariSudah = '';
+  APP.rekod.cariBelum = '';
+  loadStatistik();
+}
+
+function gantiBulanRelatif(offset) {
+  // offset -1 = bulan lepas, 0 = semasa
+  let b = APP.rekod.bulan + offset;
+  let y = APP.rekod.tahun;
+  if (b < 1) { b = 12; y--; }
+  if (b > 12) { b = 1; y++; }
+  APP.rekod.bulan = b;
+  APP.rekod.tahun = y;
+  APP.rekod.cariSudah = '';
+  APP.rekod.cariBelum = '';
+  const sel = document.getElementById('rekodBulanSel');
+  if (sel) sel.value = `${b}-${y}`;
+  loadStatistik();
+}
+
+function onCariSudah(v)  { APP.rekod.cariSudah  = (v||'').toLowerCase(); renderGuruLists(); }
+function onCariBelum(v)  { APP.rekod.cariBelum  = (v||'').toLowerCase(); renderGuruLists(); }
+
+// Render semula hanya dua senarai guru (selepas search), tanpa fetch semula
+function renderGuruLists() {
+  const d = APP.rekod.data;
+  if (!d) return;
+  const sudahEl = document.getElementById('rekodListSudah');
+  const belumEl = document.getElementById('rekodListBelum');
+  if (sudahEl) sudahEl.innerHTML = renderGuruItems(d.sudahMasuk, APP.rekod.cariSudah, 'sudah');
+  if (belumEl) belumEl.innerHTML = renderGuruItems(d.belumMasuk, APP.rekod.cariBelum, 'belum');
+  // kemas kini kiraan terhasil carian
+  const cs = document.getElementById('rekodCountSudah');
+  const cb = document.getElementById('rekodCountBelum');
+  if (cs) cs.textContent = filterGuru(d.sudahMasuk, APP.rekod.cariSudah).length;
+  if (cb) cb.textContent = filterGuru(d.belumMasuk, APP.rekod.cariBelum).length;
+}
+
+function filterGuru(list, q) {
+  if (!q) return list;
+  return list.filter(n => String(n).toLowerCase().includes(q));
+}
+
+function renderGuruItems(list, q, jenis) {
+  const filtered = filterGuru(list, q);
+  if (!filtered.length) {
+    if (q) return '<div class="rekod-empty">Tiada padanan untuk carian ini.</div>';
+    return jenis === 'sudah'
+      ? '<div class="rekod-empty">Tiada lagi bulan ini.</div>'
+      : '<div class="rekod-empty">✨ Semua guru dah masuk bulan ini!</div>';
+  }
+  const cls = jenis === 'sudah' ? 'gi-sudah' : 'gi-belum';
+  return `<div class="guru-grid">${filtered.map(n =>
+    `<div class="guru-item ${cls}" title="${escapeHtml(n)}">
+       <span class="gi-dot" aria-hidden="true"></span>
+       <span class="gi-nama">${escapeHtml(n)}</span>
+     </div>`
+  ).join('')}</div>`;
 }
 
 function renderStatistik(d) {
   if (!d) return;
+  // sync cache supaya fungsi search (renderGuruLists) berfungsi selepas init page-load.
+  APP.rekod.data = d;
+  // selaraskan state bulan/tahun dengan data yang diterima (jika dari init load)
+  if (typeof d.bulan === 'number') APP.rekod.bulan = d.bulan + 1; // backend hantar 0-11
+  if (d.tahun) APP.rekod.tahun = d.tahun;
+  const el = document.getElementById('statBlockRekod');
+  if (!el) return;
 
   const pctSudah = d.jumlahGuru > 0 ? Math.round(d.jumlahSudah / d.jumlahGuru * 100) : 0;
-  const mkChip   = (nama, warna) =>
-    `<span class="stat-chip stat-chip-${warna}" title="${escapeHtml(nama)}">${escapeHtml(nama)}</span>`;
+  const bulanSelValue = `${APP.rekod.bulan}-${APP.rekod.tahun}`;
+
+  // Kira berapa bulan sejak semasa (untuk label "bulan semasa/lepas")
+  const now = new Date();
+  const diffBulan = (APP.rekod.tahun - now.getFullYear()) * 12 + (APP.rekod.bulan - (now.getMonth() + 1));
+  let chipLabel = '';
+  if (diffBulan === 0) chipLabel = 'Bulan Semasa';
+  else if (diffBulan === -1) chipLabel = 'Bulan Lepas';
+  else if (diffBulan < 0) chipLabel = `${-diffBulan} Bulan Lepas`;
+  else chipLabel = `${diffBulan} Bulan Depan`;
 
   const html = `
-    <div style="padding:12px 14px">
-      <div class="stat-bulan-header">
-        <span class="stat-bulan-title">📅 ${escapeHtml(d.bulanLabel)}</span>
-        <span class="stat-bulan-count">${d.jumlah} slot ditempah</span>
-      </div>
-      <div class="stat-progress-wrap">
-        <div class="stat-progress-bar" style="width:${pctSudah}%"></div>
-      </div>
-      <div class="stat-progress-label">
-        <span>${d.jumlahSudah} daripada ${d.jumlahGuru} guru telah masuk</span>
-        <span>${pctSudah}%</span>
-      </div>
-      <div class="stat-section">
-        <div class="stat-section-hdr stat-hdr-sudah">
-          ✅ Sudah Masuk Bilik Media
-          <span class="stat-badge">${d.jumlahSudah}</span>
+    <div class="rekod-body">
+      <!-- Bar alat bulan -->
+      <div class="rekod-toolbar">
+        <button class="rekod-nav-btn" onclick="gantiBulanRelatif(-1)" aria-label="Bulan sebelum">‹</button>
+        <div class="rekod-bulan-wrap">
+          <span class="rekod-bulan-chip">${escapeHtml(chipLabel)}</span>
+          <select id="rekodBulanSel" class="rekod-bulan-sel" onchange="onRekodBulanChange()">
+            ${buildRekodMonthOptions()}
+          </select>
         </div>
-        <div class="stat-chips">
-          ${d.sudahMasuk.length
-            ? d.sudahMasuk.map(n => mkChip(n,'hijau')).join('')
-            : '<span class="stat-empty">Tiada lagi bulan ini</span>'}
+        <button class="rekod-nav-btn" onclick="gantiBulanRelatif(1)" aria-label="Bulan berikut">›</button>
+      </div>
+
+      <!-- Kad ringkasan -->
+      <div class="rekod-cards">
+        <div class="rc-card rc-bulan">
+          <span class="rc-ic">📅</span>
+          <span class="rc-val">${escapeHtml(d.bulanLabel)}</span>
+          <span class="rc-lbl">Bulan Dipilih</span>
+        </div>
+        <div class="rc-card rc-guru">
+          <span class="rc-ic">👥</span>
+          <span class="rc-val">${d.jumlahGuru}</span>
+          <span class="rc-lbl">Guru Aktif</span>
+        </div>
+        <div class="rc-card rc-sudah">
+          <span class="rc-ic">✅</span>
+          <span class="rc-val">${d.jumlahSudah}</span>
+          <span class="rc-lbl">Sudah Masuk</span>
+        </div>
+        <div class="rc-card rc-belum">
+          <span class="rc-ic">⏳</span>
+          <span class="rc-val">${d.jumlahBelum}</span>
+          <span class="rc-lbl">Belum Masuk</span>
+        </div>
+        <div class="rc-card rc-slot">
+          <span class="rc-ic">🎯</span>
+          <span class="rc-val">${d.jumlah}</span>
+          <span class="rc-lbl">Slot Ditempah</span>
+        </div>
+        <div class="rc-card rc-pct">
+          <span class="rc-ic">📊</span>
+          <span class="rc-val">${pctSudah}%</span>
+          <span class="rc-lbl">Penggunaan Guru</span>
         </div>
       </div>
-      <div class="stat-section">
-        <div class="stat-section-hdr stat-hdr-belum">
-          ⏳ Belum Masuk Bilik Media
-          <span class="stat-badge">${d.jumlahBelum}</span>
+
+      <!-- Progress bar keseluruhan -->
+      <div class="rekod-progress">
+        <div class="rp-info">
+          <span><strong>${d.jumlahSudah}</strong> / ${d.jumlahGuru} guru telah masuk</span>
+          <span class="rp-pct">${pctSudah}%</span>
         </div>
-        <div class="stat-chips">
-          ${d.belumMasuk.length
-            ? d.belumMasuk.map(n => mkChip(n,'merah')).join('')
-            : '<span class="stat-empty">✨ Semua guru dah masuk bulan ini!</span>'}
+        <div class="rp-track">
+          <div class="rp-fill" style="width:${pctSudah}%"></div>
         </div>
       </div>
+
+      <!-- Dua kad: Sudah & Belum -->
+      <div class="rekod-list-wrap">
+        <div class="rekod-list-card rlc-sudah">
+          <div class="rlc-hdr">
+            <span class="rlc-title">✅ Sudah Masuk Bilik Media</span>
+            <span class="rlc-badge rlc-badge-sudah" id="rekodCountSudah">${d.jumlahSudah}</span>
+          </div>
+          <div class="rlc-search">
+            <span class="rlc-si">🔍</span>
+            <input type="text" class="rlc-input" placeholder="Cari nama guru..."
+              value="${escapeHtml(APP.rekod.cariSudah||'')}"
+              oninput="onCariSudah(this.value)" />
+          </div>
+          <div id="rekodListSudah">${renderGuruItems(d.sudahMasuk, APP.rekod.cariSudah, 'sudah')}</div>
+        </div>
+
+        <div class="rekod-list-card rlc-belum">
+          <div class="rlc-hdr">
+            <span class="rlc-title">⏳ Belum Masuk Bilik Media</span>
+            <span class="rlc-badge rlc-badge-belum" id="rekodCountBelum">${d.jumlahBelum}</span>
+          </div>
+          <div class="rlc-search">
+            <span class="rlc-si">🔍</span>
+            <input type="text" class="rlc-input" placeholder="Cari nama guru..."
+              value="${escapeHtml(APP.rekod.cariBelum||'')}"
+              oninput="onCariBelum(this.value)" />
+          </div>
+          <div id="rekodListBelum">${renderGuruItems(d.belumMasuk, APP.rekod.cariBelum, 'belum')}</div>
+        </div>
+      </div>
+
+      <p class="rekod-note">Senarai guru mengikut data aktif terkini (diselaraskan dengan Google Sheet). Rekod tempahan lama kekal disimpan.</p>
     </div>`;
 
-  const el2  = document.getElementById('statBlockRekod');
-  if (el2) el2.innerHTML = html;
+  el.innerHTML = html;
+  // pastikan nilai <select> ikut state (sebab buildRekodMonthOptions guna APP.rekod)
+  const sel = document.getElementById('rekodBulanSel');
+  if (sel) sel.value = bulanSelValue;
 }
 
 // ─── TEMPAHAN SAYA ────────────────────────────────────────────

@@ -88,9 +88,13 @@ router.get('/status-sekarang', async (req, res) => {
 });
 
 // ── Statistik bulanan ────────────────────────────────────────
+// Query pilihan: ?bulan=7&tahun=2026  (default: bulan/tahun semasa)
 router.get('/statistik', async (req, res) => {
   try {
-    const data = await booking.getStatistik();
+    const data = await booking.getStatistik({
+      bulan: req.query.bulan,
+      tahun: req.query.tahun
+    });
     res.json({ ok: true, data });
   } catch (e) {
     res.json({ ok: false, error: e.message });

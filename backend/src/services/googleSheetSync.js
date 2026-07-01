@@ -27,6 +27,9 @@ async function syncGuru() {
   const tabName = process.env.SHEET_TAB_GURU || 'SENARAI GURU';
   const rows = await getRows(tabName);
 
+  // Kumpulkan nama guru dari Google Sheet terkini (uppercase trim untuk padanan).
+  // Google Sheet = sumber kebenaran untuk senarai guru AKTIF.
+  const sheetNames = new Set();
   let count = 0;
 
   for (let i = 1; i < rows.length; i++) {
@@ -34,6 +37,8 @@ async function syncGuru() {
     const singkatan = String(rows[i][1] || '').trim();
 
     if (!guru) continue;
+
+    sheetNames.add(guru.trim().toUpperCase());
 
     await query(
       `
@@ -50,7 +55,17 @@ async function syncGuru() {
     count++;
   }
 
-  return count;
+  // PUNCA BUG REKOD: guru yang sudah dibuang dari Google Sheet masih aktif.
+  // Penyelesaian: tanda aktif = FALSE untuk guru yang TIADA dalam sheet terkini.
+  // BUKAN DELETE — rekod tempahan lama (bookings) milik guru itu kekal utuh.
+  const disableRes = await query(`
+    UPDATE teachers
+    SET aktif = FALSE
+    WHERE UPPER(BTRIM(nama)) <> ALL($1::text[])
+      AND aktif = TRUE
+  `, [Array.from(sheetNames)]);
+
+  return { count, disabled: disableRes.rowCount || 0 };
 }
 
 async function syncJadualGuru() {

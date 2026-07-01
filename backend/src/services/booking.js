@@ -165,15 +165,28 @@ async function getStatusSekarang() {
 }
 
 // ============================================================
-// STATISTIK — siapa sudah / belum masuk bulan ini
+// STATISTIK — siapa sudah / belum masuk (default: bulan semasa)
+// boleh pilih bulan & tahun melalui parameter
 // ============================================================
-async function getStatistik() {
+async function getStatistik(opts = {}) {
   const now = new Date();
-  const bulan = now.getMonth() + 1; // 1-12
-  const tahun = now.getFullYear();
+  let bulan = now.getMonth() + 1; // 1-12
+  let tahun = now.getFullYear();
+
+  // Parameter pilihan bulan/tahun (1-12 / 4 digit). Fallback ke bulan semasa.
+  if (opts.bulan !== undefined && opts.bulan !== null && opts.bulan !== '') {
+    const b = Number(opts.bulan);
+    if (Number.isInteger(b) && b >= 1 && b <= 12) bulan = b;
+  }
+  if (opts.tahun !== undefined && opts.tahun !== null && opts.tahun !== '') {
+    const t = Number(opts.tahun);
+    if (Number.isInteger(t) && t >= 2000 && t <= 2100) tahun = t;
+  }
+
   const bulanLabel = `${BULAN_PENUH[bulan - 1]} ${tahun}`;
 
-  // Guru yang sudah masuk bulan ini
+  // Guru yang sudah masuk pada bulan/tahun yang dipilih.
+  // Sumber: rekod booking (statistik slot TETAP dikira dari rekod sebenar).
   const usedRes = await query(`
     SELECT DISTINCT guru, COUNT(*) AS jumlah_slot
     FROM bookings
@@ -182,24 +195,33 @@ async function getStatistik() {
       AND EXTRACT(YEAR FROM tarikh) = $2
     GROUP BY guru
   `, [bulan, tahun]);
-  const sudahNama = new Set();
   let totalSlots = 0;
-  usedRes.rows.forEach(r => { sudahNama.add(r.guru); totalSlots += Number(r.jumlah_slot); });
+  usedRes.rows.forEach(r => { totalSlots += Number(r.jumlah_slot); });
 
-  // Semua guru aktif
-  const semuaRes = await query(`SELECT nama FROM teachers WHERE aktif = TRUE ORDER BY nama`);
+  // Sumber senarai guru = guru AKTIF terkini hasil sync Google Sheet.
+  // Guru lama yang sudah dibuang dari Google Sheet (aktif = FALSE)
+  // TIDAK akan muncul dalam paparan Rekod, walaupun ada rekod booking lama.
+  const semuaRes = await query(`
+    SELECT nama FROM teachers WHERE aktif = TRUE ORDER BY nama
+  `);
   const semuaGuru = semuaRes.rows.map(r => r.nama);
 
-  // Kategorikan (fuzzy match supaya nama yang diperbetulkan masih dikenali)
+  // Nama yang ada tempahan pada bulan dipilih (untuk padanan fuzzy).
+  const sudahNama = usedRes.rows.map(r => r.guru);
+
+  // Kategorikan — berdasarkan guru aktif terkini sahaja.
+  // "Sudah Masuk" = guru aktif yang ada rekod tempahan bulan dipilih.
+  // "Belum Masuk" = guru aktif yang tiada rekod tempahan bulan dipilih.
   const sudah = semuaGuru.filter(g =>
-    [...sudahNama].some(s => isNamaSesuai(s, g))
+    sudahNama.some(s => isNamaSesuai(s, g))
   );
   const belum = semuaGuru.filter(g =>
-    ![...sudahNama].some(s => isNamaSesuai(s, g))
+    !sudahNama.some(s => isNamaSesuai(s, g))
   );
 
   return {
-    bulan: bulan - 1,  // selaras dengan format JS Date
+    bulan: bulan - 1,  // selaras dengan format JS Date (0-11)
+    tahun,
     bulanLabel,
     jumlah: totalSlots,
     sudahMasuk: sudah,
