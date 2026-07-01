@@ -641,7 +641,36 @@ async function loadSettings() {
     </div>
   `;
 
-  const settingsHtml = !r.data.length
+  // ── Tetapan Had Tempahan (guru sebulan) ──────────────────────
+  // Dibaca daripada senarai settings sedia ada (key: HAD_TEMPAHAN_BULAN).
+  // Jika baris belum wujud dalam DB, defaultnya kekal 2 kali sebulan
+  // (sama seperti fallback backend), supaya behaviour lama tidak berubah.
+  const HAD_TEMPAHAN_KEY = 'HAD_TEMPAHAN_BULAN';
+  const hadRow = r.data.find(s => s.key === HAD_TEMPAHAN_KEY);
+  const hadValParsed = hadRow ? Number(hadRow.value) : NaN;
+  const hadVal = Number.isFinite(hadValParsed) ? hadValParsed : 2;
+
+  const hadTempahanHtml = `
+    <div class="dash-card" style="margin-bottom:18px;max-width:480px">
+      <h3>Tetapan Had Tempahan</h3>
+      <div class="fg">
+        <label>Had tempahan guru sebulan</label>
+        <select class="fc" id="hadTempahanSel">
+          <option value="2"${hadVal === 2 ? ' selected' : ''}>2 kali sebulan</option>
+          <option value="3"${hadVal === 3 ? ' selected' : ''}>3 kali sebulan</option>
+          <option value="0"${hadVal === 0 ? ' selected' : ''}>Tiada had</option>
+        </select>
+      </div>
+      <p style="font-size:.75rem;color:var(--kelabu);margin:-4px 0 12px;line-height:1.5">
+        Had ini terpakai untuk semua guru bagi setiap bulan kalendar (default sistem: 2 kali sebulan).
+        Guru yang ditanda "Override had bulanan" dalam Senarai Guru tidak terjejas oleh tetapan ini.
+      </p>
+      <button class="btn btn-hijau btn-auto" onclick="saveHadTempahan()">Simpan</button>
+    </div>
+  `;
+
+  const rawSettings = r.data.filter(s => s.key !== HAD_TEMPAHAN_KEY);
+  const settingsHtml = !rawSettings.length
     ? '<div class="empty"><div class="ei">📭</div><p>Tiada tetapan</p></div>'
     : `
     <div class="info-box">
@@ -650,7 +679,7 @@ async function loadSettings() {
     <div class="atable-wrap"><table class="atable">
       <thead><tr><th>Kekunci</th><th>Nilai</th><th>Keterangan</th><th></th></tr></thead>
       <tbody>
-        ${r.data.map(s => `<tr>
+        ${rawSettings.map(s => `<tr>
           <td><code>${escapeHtml(s.key)}</code></td>
           <td><input class="fc" id="set-${s.key}" value="${escapeHtml(s.value||'')}"/></td>
           <td style="font-size:.75rem;color:var(--kelabu)">${escapeHtml(s.deskripsi||'')}</td>
@@ -663,7 +692,7 @@ async function loadSettings() {
     </div>
   `;
 
-  el.innerHTML = akaunHtml + settingsHtml;
+  el.innerHTML = akaunHtml + hadTempahanHtml + settingsHtml;
 }
 async function saveAccount() {
   const username = document.getElementById('accUser').value.trim();
@@ -685,6 +714,15 @@ async function saveSetting(key) {
   const val = document.getElementById('set-' + key).value;
   const r = await API.put('/settings/' + encodeURIComponent(key), { value: val });
   showToast(r.ok ? '✅ Tersimpan' : ('⚠️ '+r.error), r.ok?'ok':'err');
+}
+async function saveHadTempahan() {
+  const sel = document.getElementById('hadTempahanSel');
+  if (!sel) return;
+  const val = sel.value; // '0' = Tiada had, '2' atau '3' = had bilangan
+  const r = await API.put('/settings/HAD_TEMPAHAN_BULAN', { value: val, data_type: 'int' });
+  if (!r.ok) { showToast('⚠️ ' + (r.error || 'Gagal simpan tetapan'), 'err'); return; }
+  const label = val === '0' ? 'Tiada had' : (val + ' kali sebulan');
+  showToast('✅ Had tempahan guru dikemaskini: ' + label, 'ok');
 }
 async function clearCache() {
   const r = await API.post('/cache/clear');

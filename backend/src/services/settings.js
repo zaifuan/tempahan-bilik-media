@@ -19,8 +19,33 @@ function castValue(value, dataType) {
   }
 }
 
+// ============================================================
+// SEED DEFAULT SETTINGS (non-destructive)
+// Pastikan setting HAD_TEMPAHAN_BULAN wujud secara eksplisit dalam
+// jadual `settings` supaya tetapan admin konsisten merentasi deployment.
+// Guna ON CONFLICT DO NOTHING — TIDAK PERNAH menimpa nilai sedia ada,
+// tidak drop/truncate apa-apa jadual.
+// ============================================================
+let _seeded = false;
+async function seedDefaultSettings() {
+  if (_seeded) return;
+  try {
+    await query(`
+      INSERT INTO settings (key, value, data_type, updated_at)
+      VALUES ('HAD_TEMPAHAN_BULAN', '2', 'int', NOW())
+      ON CONFLICT (key) DO NOTHING
+    `);
+  } catch (e) {
+    // Jika jadual settings belum sedia (contoh: migrasi awal), jangan crash app.
+    console.error('[settings] Gagal seed HAD_TEMPAHAN_BULAN:', e.message);
+  }
+  _seeded = true;
+}
+
 async function getConfig(force = false) {
   if (!force && cache && Date.now() < cacheExpiry) return cache;
+
+  await seedDefaultSettings();
 
   // 1. Settings KV
   const setRes = await query('SELECT key, value, data_type FROM settings');
@@ -62,7 +87,13 @@ async function getConfig(force = false) {
     SCHOOL_LOGO_URL: set.SCHOOL_LOGO_URL || '',
     MAX_BOOKING_DAY: Number(set.MAX_BOOKING_DAY) || 30,
     AUTO_REFRESH: Number(set.AUTO_REFRESH) || 60,
-    HAD_TEMPAHAN_BULAN: Number(set.HAD_TEMPAHAN_BULAN) || 2,
+    // HAD_TEMPAHAN_BULAN: had tempahan guru sebulan (ditetapkan oleh admin).
+    // PENTING: 0 bermaksud "Tiada had" (unlimited) — jangan guna `Number(x) || 2`
+    // di sini kerana 0 itu "falsy" dan akan tersalah jatuh balik ke default 2.
+    // Fallback ke 2 HANYA apabila setting belum wujud / nilai tidak sah.
+    HAD_TEMPAHAN_BULAN: Number.isFinite(Number(set.HAD_TEMPAHAN_BULAN))
+      && set.HAD_TEMPAHAN_BULAN !== null && set.HAD_TEMPAHAN_BULAN !== undefined && set.HAD_TEMPAHAN_BULAN !== ''
+      ? Number(set.HAD_TEMPAHAN_BULAN) : 2,
     HAD_AKTIF: set.HAD_AKTIF === true || set.HAD_AKTIF === 'true',
     HAD_MODE: set.HAD_MODE || 'UNIQUE_DATE',
     BLOCK_REST_TIME: set.BLOCK_REST_TIME === true || set.BLOCK_REST_TIME === 'true',

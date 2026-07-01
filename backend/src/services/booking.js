@@ -240,6 +240,11 @@ async function semakHadBulan(namaGuru, tarikhYMD) {
   const cfg = await getConfig();
   if (!cfg.HAD_AKTIF) return { ada: false };
 
+  // Had = 0 (atau tiada nilai positif) ditetapkan oleh admin sebagai "Tiada had"
+  // — guru dibenarkan tempah tanpa sekatan bulanan. Mesti disemak SEBELUM
+  // perbandingan `>=` di bawah kerana 0 akan sentiasa benar jika tidak disekat di sini.
+  if (!cfg.HAD_TEMPAHAN_BULAN || cfg.HAD_TEMPAHAN_BULAN <= 0) return { ada: false };
+
   // Cek override per guru
   const tr = await query(`
     SELECT override_limit FROM teachers
