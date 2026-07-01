@@ -108,10 +108,6 @@ function showTab(name, btn) {
   switch (name) {
     case 'dashboard': loadDashboard(); break;
     case 'bookings' : loadBookings(); break;
-    case 'teachers' : loadTeachers(); break;
-    case 'classes'  : loadClasses(); break;
-    case 'subjects' : loadSubjects(); break;
-    case 'schedule' : loadSchedule(); break;
     case 'settings' : loadSettings(); break;
     case 'disabled' : loadDisabled(); break;
     case 'holidays' : loadHolidays(); break;
@@ -319,6 +315,14 @@ async function loopCancelBookings(ids, reason) {
   showToast((fail ? '⚠️ ' : '✅ ') + msg, fail ? 'err' : 'ok');
   loadBookings();
 }
+
+// ═══════════════════════════════════════════════════════════
+// NOTA: Fungsi CRUD GURU / KELAS / SUBJEK / JADUAL di bawah
+// dikekalkan untuk rujukan & keserasian, tetapi TIDAK LAGI
+// dipaparkan dalam UI admin (tab & seksyen telah dibuang).
+// Data ini kini diurus melalui Sync Google Sheet. Fungsi ini
+// tidak dipanggil oleh mana-mana butang/tab — kod tidak aktif.
+// ═══════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════
 // TEACHERS
