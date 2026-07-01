@@ -572,6 +572,15 @@ function filterGuru(list, q) {
   return list.filter(n => String(n).toLowerCase().includes(q));
 }
 
+// Ambil 1-2 huruf inisial daripada nama guru untuk paparan avatar kecil
+function guruInitials(nama) {
+  const bersih = String(nama || '').trim().replace(/^(DR|USTAZ|USTAZAH|TN|PN|CIK|EN)\.?\s+/i, '');
+  const bahagian = bersih.split(/\s+/).filter(Boolean);
+  if (!bahagian.length) return '?';
+  if (bahagian.length === 1) return bahagian[0].slice(0, 2).toUpperCase();
+  return (bahagian[0][0] + bahagian[1][0]).toUpperCase();
+}
+
 function renderGuruItems(list, q, jenis) {
   const filtered = filterGuru(list, q);
   if (!filtered.length) {
@@ -583,7 +592,7 @@ function renderGuruItems(list, q, jenis) {
   const cls = jenis === 'sudah' ? 'gi-sudah' : 'gi-belum';
   return `<div class="guru-grid">${filtered.map(n =>
     `<div class="guru-item ${cls}" title="${escapeHtml(n)}">
-       <span class="gi-dot" aria-hidden="true"></span>
+       <span class="gi-avatar" aria-hidden="true">${escapeHtml(guruInitials(n))}</span>
        <span class="gi-nama">${escapeHtml(n)}</span>
      </div>`
   ).join('')}</div>`;
