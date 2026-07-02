@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#16a34a"/>
+<title>Tiada Sambungan — Sistem Tempahan Bilik Media</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:#f0fdf4;color:#1e293b;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .box{
+    max-width:360px;width:100%;text-align:center;background:#fff;
+    border:1px solid #bbf7d0;border-radius:20px;padding:34px 26px;
+    box-shadow:0 12px 30px rgba(0,0,0,.09),0 4px 10px rgba(0,0,0,.06);
+  }
+  .ic{font-size:3rem;margin-bottom:14px;line-height:1}
+  h1{font-size:1.05rem;font-weight:800;color:#14532d;margin-bottom:8px}
+  p{font-size:.86rem;color:#64748b;line-height:1.6;margin-bottom:22px}
+  button{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    width:100%;padding:12px 18px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,#16a34a,#14532d);color:#fff;
+    font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;
+    transition:.2s ease;
+  }
+  button:hover{opacity:.92}
+  button:active{transform:translateY(1px)}
+  .hint{margin-top:14px;font-size:.72rem;color:#94a3b8}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="ic">📡</div>
+    <h1>Tiada Sambungan Internet</h1>
+    <p>Sila cuba semula sebaik sahaja sambungan internet anda kembali. Sesetengah halaman yang pernah dibuka mungkin masih boleh diakses.</p>
+    <button onclick="location.reload()">🔄 Cuba Semula</button>
+    <p class="hint">Sistem Tempahan Bilik Media — SABK Maahad Al Khair Lil Banat</p>
+  </div>
+</body>
+</html>

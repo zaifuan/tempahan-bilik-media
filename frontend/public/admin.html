@@ -4,8 +4,21 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="theme-color" content="#16a34a"/>
+<meta name="description" content="Panel admin Sistem Tempahan Bilik Media SABK Maahad Al Khair Lil Banat."/>
 <title>Admin · Sistem Tempahan Bilik Media</title>
+
+<!-- ══ PWA: manifest & meta tag ══ -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Tempahan Bilik Media"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+<link rel="icon" type="image/x-icon" href="/icons/favicon.ico"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+
 <link rel="stylesheet" href="/css/admin.css"/>
+<link rel="stylesheet" href="/css/pwa.css"/>
 </head>
 <body>
 
@@ -140,5 +153,14 @@
 </div>
 
 <script src="/js/admin.js?v=6"></script>
+
+<!-- ══ PWA: bar kemaskini versi, badge offline (tiada butang pasang di sini) ══ -->
+<div class="pwa-update-bar" id="pwaUpdateBar">
+  <span class="pu-ic">&#10024;</span>
+  <span class="pu-text">Versi baharu tersedia.</span>
+  <button class="pu-btn" id="pwaUpdateBtn" type="button">Muat Semula</button>
+</div>
+<div class="pwa-offline-badge" id="pwaOfflineBadge">&#128225; Tiada sambungan internet</div>
+<script src="/js/pwa.js"></script>
 </body>
 </html>

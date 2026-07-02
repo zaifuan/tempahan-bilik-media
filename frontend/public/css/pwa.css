@@ -1,0 +1,103 @@
+/* ============================================================
+   pwa.css — UI tambahan khusus PWA
+   (butang pasang app, bar kemaskini versi, badge offline)
+   Fail BERASINGAN drpd app.css / admin.css supaya sistem sedia
+   ada (tempahan, admin) langsung tidak disentuh oleh perubahan ini.
+   ============================================================ */
+
+/* Butang "Pasang Aplikasi" — muncul hanya bila beforeinstallprompt
+   ditangkap & belum dipasang. Diletak sebelah kiri supaya tidak
+   bertindih dengan FAB (+) sedia ada di sebelah kanan. */
+.pwa-install-btn{
+  position:fixed;
+  left:16px;
+  bottom:78px;
+  z-index:89;
+  display:none;
+  align-items:center;
+  gap:7px;
+  padding:0 15px;
+  height:42px;
+  border-radius:99px;
+  background:#ffffff;
+  color:#15803d;
+  border:1.5px solid #bbf7d0;
+  font-size:.78rem;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.13),0 2px 6px rgba(0,0,0,.08);
+  transition:.2s ease;
+}
+.pwa-install-btn.show{ display:inline-flex; animation:pwaPop .25s ease; }
+.pwa-install-btn:hover{ background:#f0fdf4; transform:translateY(-2px); }
+.pwa-install-btn:active{ transform:translateY(0); }
+@keyframes pwaPop{
+  from{ opacity:0; transform:translateY(8px) scale(.94); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
+/* Bar "Versi baharu tersedia" — muncul bila service worker baharu
+   sedia menunggu (waiting), hilang selepas Muat Semula ditekan. */
+.pwa-update-bar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  z-index:250;
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding:11px 16px calc(11px + env(safe-area-inset-bottom));
+  background:#14532d;
+  color:#fff;
+}
+.pwa-update-bar.show{ display:flex; animation:pwaSlideUp .25s ease; }
+.pwa-update-bar .pu-ic{ font-size:1.05rem; flex-shrink:0 }
+.pwa-update-bar .pu-text{ flex:1; font-size:.78rem; font-weight:600; line-height:1.4; min-width:0 }
+.pwa-update-bar .pu-btn{
+  flex-shrink:0;
+  padding:9px 15px;
+  border-radius:9px;
+  border:none;
+  background:#16a34a;
+  color:#fff;
+  font-size:.78rem;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  transition:.2s ease;
+}
+.pwa-update-bar .pu-btn:hover{ background:#22c55e; }
+@keyframes pwaSlideUp{
+  from{ opacity:0; transform:translateY(100%); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+/* Badge kecil "Tiada sambungan" — indikator status rangkaian pantas,
+   berasingan drpd offline.html (yang hanya terpapar bila navigasi gagal). */
+.pwa-offline-badge{
+  position:fixed;
+  top:74px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:260;
+  display:none;
+  align-items:center;
+  gap:6px;
+  padding:6px 14px;
+  border-radius:99px;
+  background:#1e293b;
+  color:#fff;
+  font-size:.7rem;
+  font-weight:700;
+  box-shadow:0 6px 16px rgba(0,0,0,.22);
+  white-space:nowrap;
+}
+.pwa-offline-badge.show{ display:inline-flex; }
+
+@media(min-width:480px){
+  .pwa-update-bar{
+    left:50%; right:auto; bottom:20px; transform:translateX(-50%);
+    max-width:420px; border-radius:14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.22);
+  }
+}

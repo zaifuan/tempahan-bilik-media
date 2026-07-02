@@ -4,8 +4,32 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <meta name="theme-color" content="#16a34a"/>
+<meta name="description" content="Sistem tempahan dan jadual Bilik Media SABK Maahad Al Khair Lil Banat."/>
 <title>Sistem Tempahan Bilik Media</title>
+
+<!-- ══ PWA: manifest & meta tag ══ -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Tempahan Bilik Media"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+<link rel="icon" type="image/x-icon" href="/icons/favicon.ico"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<!-- Apple splash screens (Add to Home Screen — iOS/iPadOS) -->
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-750-1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1125-2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-828-1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1242-2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1170-2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1284-2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1179-2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1290-2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-1620-2160.png" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/>
+<link rel="apple-touch-startup-image" href="/icons/splash/apple-splash-2048-2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"/>
+
 <link rel="stylesheet" href="/css/app.css"/>
+<link rel="stylesheet" href="/css/pwa.css"/>
 </head>
 <body>
 
@@ -237,5 +261,15 @@
 </div>
 
 <script src="/js/app.js"></script>
+
+<!-- ══ PWA: butang pasang, bar kemaskini versi, badge offline ══ -->
+<button class="pwa-install-btn" id="pwaInstallBtn" type="button">&#128241; Pasang Aplikasi</button>
+<div class="pwa-update-bar" id="pwaUpdateBar">
+  <span class="pu-ic">&#10024;</span>
+  <span class="pu-text">Versi baharu tersedia.</span>
+  <button class="pu-btn" id="pwaUpdateBtn" type="button">Muat Semula</button>
+</div>
+<div class="pwa-offline-badge" id="pwaOfflineBadge">&#128225; Tiada sambungan internet</div>
+<script src="/js/pwa.js"></script>
 </body>
 </html>
